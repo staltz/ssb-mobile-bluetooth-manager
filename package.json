@@ -1,5 +1,5 @@
 {
-  "name": "ssb-mobile-bluetooth-manager-fork",
+  "name": "ssb-mobile-bluetooth-manager",
   "version": "3.2.3",
   "description": "A module for managing bluetooth connections over a react native bridge.",
   "main": "index.js",
