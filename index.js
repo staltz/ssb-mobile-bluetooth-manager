@@ -48,11 +48,11 @@ function makeManager (opts) {
   }
 
   /* Scanning while connected to another bluetooth device slows down the connection, increases latency and makes it
-   * periodically disconnect, so we slow down the scan interval if we're gossiping with at least one other device. 
+   * periodically disconnect, so we slow down the scan interval if we're gossiping with at least one other device.
    *
    * As per the android docs: https://developer.android.com/guide/topics/connectivity/bluetooth#QueryPairedDevices
    */
-  const scanRefreshIntervalWhenConnected = opts.scanRefreshIntervalWhenConnected || 60000; 
+  const scanRefreshIntervalWhenConnected = opts.scanRefreshIntervalWhenConnected || 60000;
   let connectedDevices = 0;
 
   const EVENT_STARTED_SCAN = "startedBluetoothScan";
@@ -96,7 +96,7 @@ function makeManager (opts) {
         "remoteAddress": bluetoothAddress
       }
     })
-  
+
   }
 
   let controlSocketEstablished = false;
@@ -211,7 +211,7 @@ function makeManager (opts) {
     } else if (commandName === "connected" && command.arguments.isIncoming) {
       var incomingAddr = "bt:" + command.arguments.remoteAddress.split(":").join("");
       debug("Setting incoming connection stream address to: " + incomingAddr);
-      
+
       incomingAddressEstablished.push({
         address: incomingAddr
       });
@@ -227,7 +227,7 @@ function makeManager (opts) {
         address: command.arguments.remoteAddress.split(":").join(""),
         failureReason: reason
       }
-      
+
       outgoingAddressEstablished.push(result);
 
     } else if (commandName === "disconnected") {
@@ -236,31 +236,31 @@ function makeManager (opts) {
 
     } else if (commandName === "discovered") {
       var currentTime = Date.now();
-      var arguments = command.arguments;
+      var args = command.arguments;
 
       debug("Updating nearby source");
-      debug(arguments);
+      debug(args);
 
-      if (arguments.error && arguments.errorCode === "bluetoothDisabled") {
+      if (args.error && args.errorCode === "bluetoothDisabled") {
         debug("Wanted nearby bluetooth devices but bluetooth is disabled. Will call back once bluetooth is enabled again.");
       }
-      else if (arguments.error === true) {
-        awaitingDevicesCb(new Error(arguments.description), null);
+      else if (args.error === true) {
+        awaitingDevicesCb(new Error(args.description), null);
       } else {
         var nearBy = {
           lastUpdate: currentTime,
-          discovered: arguments.devices
+          discovered: args.devices
         }
 
         bluetoothScanStateEmitter.emit(EVENT_FOUND_BLUETOOTH_DEVICES, nearBy);
         bluetoothScanStateEmitter.emit(EVENT_FINISHED_FINDING_BLUETOOTH_DEVICES);
-  
+
         awaitingDevicesCb(null, nearBy);
       }
-    
+
     } else if (commandName === "discoverable") {
-      var arguments = command.arguments;
-      if (arguments.error === true) {
+      var args = command.arguments;
+      if (args.error === true) {
         awaitingDiscoverableResponse(command.arguments);
       }
       else {
@@ -269,26 +269,26 @@ function makeManager (opts) {
 
       awaitingDiscoverableResponse = null;
     } else if (commandName === "isEnabled") {
-      var arguments = command.arguments;
-      awaitingIsEnabledResponse(null, arguments.enabled);
+      var args = command.arguments;
+      awaitingIsEnabledResponse(null, args.enabled);
     } else if (commandName === "ownMacAddress") {
-      var arguments = command.arguments;
-      awaitingOwnMacAddressResponse(null, arguments.address);
+      var args = command.arguments;
+      awaitingOwnMacAddressResponse(null, args.address);
     } else if (commandName === "getMetadata") {
-      var arguments = command.arguments;
+      var args = command.arguments;
 
       var requestId = command.requestId;
 
       var cb = awaitingMetadata[requestId];
 
-      if (arguments.error === true) {
-        cb(new Error(arguments.error.description), null);
+      if (args.error === true) {
+        cb(new Error(args.error.description), null);
       } else {
-        cb(null, arguments.metadata);
+        cb(null, args.metadata);
       }
 
       delete awaitingMetadata[requestId];
-        
+
     } else if (commandName === "bluetoothState" && command.arguments.isEnabled) {
 
       debug("Bluetooth has been enabled.");
@@ -338,19 +338,19 @@ function makeManager (opts) {
     onIncomingConnection = onConnection;
 
     if(started) return
-    
+
     var socket = opts.socketFolderPath + "/" + opts.incomingSocketFilename;
     try {
       fs.unlinkSync(socket);
     } catch (error) {
-      
+
     }
 
     var server = net.createServer(function (incomingStream) {
 
       // We only call back with the connection when we later receive the address over the control
       // bridge. See the 'onCommand' function.
-      
+
       incomingConnectionEstablished.push({
         stream: logDuplexStreams( toPull.duplex(incomingStream) )
       })
@@ -362,7 +362,7 @@ function makeManager (opts) {
     });
 
     started = true;
-    
+
     return function () {
       debug("Server close?");
     }
@@ -375,7 +375,7 @@ function makeManager (opts) {
     controlSocketSource.push({
       "command": "discoverDevices",
       "arguments": {
-        
+
       }
     });
   }
@@ -387,7 +387,7 @@ function makeManager (opts) {
   }
 
   function getValidAddresses(devices, cb) {
-  
+
     var results = [];
     var count = 0;
 
@@ -400,20 +400,20 @@ function makeManager (opts) {
 
       return;
     }
-  
+
     devices.forEach( (device, num) => {
-  
+
       getMetadataForDevice(device.remoteAddress, (err, res) => {
 
         count = count + 1;
         debug("getValidAddresses count: " + count);
-  
+
         if (!err) {
           debug(device.remoteAddress + " is available for scuttlebutt bluetooth connections");
           device.id = res.id;
           results.push(device);
         }
-  
+
         if (count === devices.length) {
           debug("Calling back (get valid addresses)...");
           debug("Valid addresses:");
@@ -442,13 +442,13 @@ function makeManager (opts) {
             "lastUpdate": Date.now()
           });
         }
-  
+
       });
     })
   }
 
   function nearbyScuttlebuttDevices(refreshInterval) {
-    
+
     return pull(
       nearbyDevices(refreshInterval),
       pull.asyncMap( (result, cb) => {
@@ -533,7 +533,7 @@ function makeManager (opts) {
       controlSocketSource.push({
         "command": "makeDiscoverable",
         "arguments": {
-          "forTime": forTime    
+          "forTime": forTime
         }
       });
     }
@@ -631,7 +631,7 @@ function makeManager (opts) {
     bluetoothScanStateEmitter.on(EVENT_CHECKING_DEVICES, onCheckingDevices);
     bluetoothScanStateEmitter.on(EVENT_ENDED_CHECKING, onFinishedCheckingDevices);
 
-    return source;    
+    return source;
   }
 
   function getOwnMacAddress(cb) {
@@ -660,7 +660,7 @@ function makeManager (opts) {
 
   /**
    * If 'opts.logStreams' is true, logs out incoming and outgoing data streams.
-   * @param {} duplexStream 
+   * @param {} duplexStream
    */
   function logDuplexStreams(duplexStream) {
     if (!opts.logStreams) {
